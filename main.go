@@ -12,10 +12,8 @@ import (
 type DateIdea struct {
 	Name     string
 	Category string
-	Checked  bool
 }
 
-// Slice to store saved date ideas
 var ExpensiveDates []DateIdea
 var MediumDates []DateIdea
 var CheapestDates []DateIdea
@@ -48,7 +46,7 @@ func main() {
 		case "create":
 			createDate()
 		case "view":
-			viewAndCheckDateIdeas()
+			viewDateIdeas()
 		case "randomExpensive":
 			randomDate(&ExpensiveDates, "Expensive")
 		case "randomMedium":
@@ -62,7 +60,76 @@ func main() {
 	}
 }
 
-func viewAndCheckDateIdeas() {
+func createDate() {
+	var dateName string
+	var category string
+
+	for {
+		nameForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Enter the date idea (cannot be empty)").
+					Value(&dateName),
+			),
+		)
+
+		err := nameForm.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if dateName != "" {
+			break
+		}
+	}
+
+	categoryForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select a category").
+				Options(
+					huh.NewOption("Cheap", "cheap"),
+					huh.NewOption("Medium", "medium"),
+					huh.NewOption("Expensive", "expensive"),
+				).
+				Value(&category),
+		),
+	)
+
+	err := categoryForm.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	newDate := DateIdea{Name: dateName, Category: category}
+	switch category {
+	case "expensive":
+		ExpensiveDates = append(ExpensiveDates, newDate)
+	case "medium":
+		MediumDates = append(MediumDates, newDate)
+	case "cheap":
+		CheapestDates = append(CheapestDates, newDate)
+	}
+
+	fmt.Println("\n✅ Date idea saved successfully!")
+}
+
+func randomDate(dateList *[]DateIdea, category string) {
+	if len(*dateList) == 0 {
+		fmt.Printf("\n⚠️ No %s date ideas saved yet! Try creating one first!\n", category)
+		fmt.Println("Press Enter to return to the main menu...")
+		fmt.Scanln()
+		return
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	selectedDate := (*dateList)[rand.Intn(len(*dateList))]
+
+	fmt.Printf("\n🎉 Your random %s date idea: %s\n", category, selectedDate.Name)
+	fmt.Println("\nPress Enter to return to the main menu...")
+	fmt.Scanln()
+}
+
+func viewDateIdeas() {
 	if len(ExpensiveDates) == 0 && len(MediumDates) == 0 && len(CheapestDates) == 0 {
 		fmt.Println("\n⚠️ No date ideas saved yet! Try creating one first!")
 		fmt.Println("Press Enter to return to the main menu...")
@@ -72,127 +139,21 @@ func viewAndCheckDateIdeas() {
 
 	fmt.Println("\n=== All Date Ideas ===")
 
-	checkAndPrintDates("💎 Expensive Dates:", &ExpensiveDates)
-	checkAndPrintDates("🎯 Medium Dates:", &MediumDates)
-	checkAndPrintDates("💰 Cheap Dates:", &CheapestDates)
+	printDates("💎 Expensive Dates:", &ExpensiveDates)
+	printDates("🎯 Medium Dates:", &MediumDates)
+	printDates("💰 Cheap Dates:", &CheapestDates)
 
 	fmt.Println("\nPress Enter to return to the main menu...")
 	fmt.Scanln()
 }
 
-func checkAndPrintDates(title string, dateList *[]DateIdea) {
-	if len(*dateList) > 0 {
-		fmt.Println("\n" + title)
-		for i, date := range *dateList {
-			checkedMark := ""
-			if date.Checked {
-				checkedMark = " ✅"
-			}
-			fmt.Printf("%d. %s%s\n", i+1, date.Name, checkedMark)
-		}
-
-		var indexToCheck int
-		fmt.Println("\nEnter the number of the date you want to check off, or 0 to skip:")
-		fmt.Scanln(&indexToCheck)
-
-		if indexToCheck > 0 && indexToCheck <= len(*dateList) {
-			(*dateList)[indexToCheck-1].Checked = true
-			fmt.Println("\n✅ Date checked off!")
-		}
-	}
-}
-
-func randomDate(dateList *[]DateIdea, category string) {
-	var confirm bool
-	randomForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().Title("Random " + category + " Date").
-				Value(&confirm),
-		),
-	)
-	err := randomForm.Run()
-	if err != nil {
-		log.Fatal(err)
+func printDates(title string, dateList *[]DateIdea) {
+	if len(*dateList) == 0 {
+		return
 	}
 
-	if confirm {
-		if len(*dateList) == 0 {
-			fmt.Printf("\n⚠️ No %s date ideas saved yet! Try creating one first!\n", category)
-			fmt.Println("Press Enter to return to the main menu...")
-			fmt.Scanln()
-			return
-		}
-
-		rand.Seed(time.Now().UnixNano())
-		randomIndex := rand.Intn(len(*dateList))
-		selectedDate := (*dateList)[randomIndex]
-
-		fmt.Printf("\n🎉 Your random %s date idea: %s\n", category, selectedDate.Name)
-		fmt.Println("\nPress Enter to return to the main menu...")
-		fmt.Scanln()
-	}
-}
-
-func createDate() {
-	var dateName string
-	var category string
-
-	nameForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Enter the date").
-				Value(&dateName),
-		),
-	)
-	err := nameForm.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	categoryForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Select a category").
-				Options(
-					huh.NewOption("Cheap", "cheap"),
-					huh.NewOption("Average", "average"),
-					huh.NewOption("Expensive", "expensive"),
-				).
-				Value(&category),
-		),
-	)
-
-	err = categoryForm.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	newDate := DateIdea{Name: dateName, Category: category}
-	if category == "expensive" {
-		ExpensiveDates = append(ExpensiveDates, newDate)
-	} else if category == "cheap" {
-		CheapestDates = append(CheapestDates, newDate)
-	} else if category == "average" {
-		MediumDates = append(MediumDates, newDate)
-	}
-
-	fmt.Println("\n✅ Date idea saved successfully!")
-
-	var createAnother bool
-	confirmForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title("Would you like to create another date?").
-				Value(&createAnother),
-		),
-	)
-
-	err = confirmForm.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if createAnother {
-		createDate()
+	fmt.Println("\n" + title)
+	for i, date := range *dateList {
+		fmt.Printf("%d. %s\n", i+1, date.Name)
 	}
 }
