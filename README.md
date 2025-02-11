@@ -2,7 +2,7 @@
 
 ## Description
 
-A CLI-based **Date Idea Randomizer** built with Go and the [Charmbracelet Huh](https://github.com/charmbracelet/huh) library. This program allows users to create, view, delete, and randomly select date ideas based on cost categories (**Expensive, Medium, Cheap**). Data is stored in a `dates.json` file for persistence.
+A CLI-based **Date Idea Randomizer** built with Go and the [Charmbracelet Huh](https://github.com/charmbracelet/huh) library. This program allows users to create, view, delete, and randomly select date ideas based on cost categories (**Expensive, Medium, Cheap**). Data is stored in a `dates.json` file for persistence. I made this for me and my partner to solve the issue of great date ideas, but poor recollection and indecisiveness for what dates to go on!
 
 ## Features
 
