@@ -1,0 +1,10 @@
+{
+  "expensive_dates": null,
+  "medium_dates": null,
+  "cheapest_dates": [
+    {
+      "name": "date",
+      "category": "cheap"
+    }
+  ]
+}

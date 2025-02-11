@@ -1,24 +1,38 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/charmbracelet/huh"
 )
 
 type DateIdea struct {
-	Name     string
-	Category string
+	Name     string `json:"name"`
+	Category string `json:"category"`
 }
 
-var ExpensiveDates []DateIdea
-var MediumDates []DateIdea
-var CheapestDates []DateIdea
+type DateStorage struct {
+	ExpensiveDates []DateIdea `json:"expensive_dates"`
+	MediumDates    []DateIdea `json:"medium_dates"`
+	CheapestDates  []DateIdea `json:"cheapest_dates"`
+}
+
+var (
+	ExpensiveDates []DateIdea
+	MediumDates    []DateIdea
+	CheapestDates  []DateIdea
+)
+
+const dateFile = "dates.json"
 
 func main() {
+	loadDates()
 	for {
 		var mainChoice string
 		form := huh.NewForm(
@@ -54,6 +68,7 @@ func main() {
 		case "randomCheap":
 			randomDate(&CheapestDates, "Cheap")
 		case "exit":
+			saveDates()
 			fmt.Println("Exiting... Have a great date! ❤️")
 			return
 		}
@@ -110,6 +125,7 @@ func createDate() {
 		CheapestDates = append(CheapestDates, newDate)
 	}
 
+	saveDates()
 	fmt.Println("\n✅ Date idea saved successfully!")
 }
 
@@ -129,31 +145,79 @@ func randomDate(dateList *[]DateIdea, category string) {
 	fmt.Scanln()
 }
 
+func loadDates() {
+	if _, err := os.Stat(dateFile); os.IsNotExist(err) {
+		return
+	}
+
+	jsonData, err := ioutil.ReadFile(dateFile)
+	if err != nil {
+		log.Fatal("Error reading JSON file:", err)
+	}
+
+	var data DateStorage
+	err = json.Unmarshal(jsonData, &data)
+	if err != nil {
+		log.Fatal("Error unmarshalling JSON:", err)
+	}
+
+	ExpensiveDates = data.ExpensiveDates
+	MediumDates = data.MediumDates
+	CheapestDates = data.CheapestDates
+}
+
+func saveDates() {
+	data := DateStorage{
+		ExpensiveDates: ExpensiveDates,
+		MediumDates:    MediumDates,
+		CheapestDates:  CheapestDates,
+	}
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		log.Fatal("Error marshalling JSON:", err)
+	}
+	err = ioutil.WriteFile(dateFile, jsonData, 0644)
+	if err != nil {
+		log.Fatal("Error writing JSON file:", err)
+	}
+}
+
 func viewDateIdeas() {
-	if len(ExpensiveDates) == 0 && len(MediumDates) == 0 && len(CheapestDates) == 0 {
+	if _, err := os.Stat(dateFile); os.IsNotExist(err) {
 		fmt.Println("\n⚠️ No date ideas saved yet! Try creating one first!")
 		fmt.Println("Press Enter to return to the main menu...")
 		fmt.Scanln()
 		return
 	}
 
-	fmt.Println("\n=== All Date Ideas ===")
+	jsonData, err := ioutil.ReadFile(dateFile)
+	if err != nil {
+		log.Fatal("Error reading JSON file:", err)
+	}
 
-	printDates("💎 Expensive Dates:", &ExpensiveDates)
-	printDates("🎯 Medium Dates:", &MediumDates)
-	printDates("💰 Cheap Dates:", &CheapestDates)
+	var data DateStorage
+	err = json.Unmarshal(jsonData, &data)
+	if err != nil {
+		log.Fatal("Error unmarshalling JSON:", err)
+	}
+
+	fmt.Println("\n=== All Date Ideas ===")
+	printDates("💎 Expensive Dates:", data.ExpensiveDates)
+	printDates("🎯 Medium Dates:", data.MediumDates)
+	printDates("💰 Cheap Dates:", data.CheapestDates)
 
 	fmt.Println("\nPress Enter to return to the main menu...")
 	fmt.Scanln()
 }
 
-func printDates(title string, dateList *[]DateIdea) {
-	if len(*dateList) == 0 {
+func printDates(title string, dates []DateIdea) {
+	if len(dates) == 0 {
+		fmt.Println(title, "No date ideas available.")
 		return
 	}
 
-	fmt.Println("\n" + title)
-	for i, date := range *dateList {
-		fmt.Printf("%d. %s\n", i+1, date.Name)
+	fmt.Println(title)
+	for _, date := range dates {
+		fmt.Println(" -", date.Name)
 	}
 }
