@@ -45,6 +45,7 @@ func main() {
 						huh.NewOption("Random Expensive Date", "randomExpensive"),
 						huh.NewOption("Random Medium Date", "randomMedium"),
 						huh.NewOption("Random Cheap Date", "randomCheap"),
+						huh.NewOption("Delete", "delete"),
 						huh.NewOption("Exit", "exit"),
 					).
 					Value(&mainChoice),
@@ -67,6 +68,8 @@ func main() {
 			randomDate(&MediumDates, "Medium")
 		case "randomCheap":
 			randomDate(&CheapestDates, "Cheap")
+		case "delete": // ✅ Calls deleteDate() when selected
+			deleteDate()
 		case "exit":
 			saveDates()
 			fmt.Println("Exiting... Have a great date! ❤️")
@@ -220,4 +223,74 @@ func printDates(title string, dates []DateIdea) {
 	for _, date := range dates {
 		fmt.Println(" -", date.Name)
 	}
+}
+func deleteDate() {
+	for {
+		allDates := append(ExpensiveDates, append(MediumDates, CheapestDates...)...)
+		if len(allDates) == 0 {
+			fmt.Println("\n⚠️ No date ideas available to delete.")
+			fmt.Println("Press Enter to return to the main menu...")
+			fmt.Scanln()
+			return
+		}
+
+		var dateToDelete string
+		options := []huh.Option[string]{}
+		for _, date := range allDates {
+			options = append(options, huh.NewOption(date.Name, date.Name))
+		}
+		options = append(options, huh.NewOption("Exit to Main Menu", "exit"))
+
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Select a date to delete").
+					Options(options...).
+					Value(&dateToDelete),
+			),
+		)
+
+		err := form.Run()
+		if err != nil || dateToDelete == "exit" {
+			return
+		}
+
+		var confirm string
+		confirmForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title(fmt.Sprintf("Are you sure you want to delete '%s'?", dateToDelete)).
+					Options(
+						huh.NewOption("Yes", "yes"),
+						huh.NewOption("No", "no"),
+					).
+					Value(&confirm),
+			),
+		)
+
+		err = confirmForm.Run()
+		if err != nil || confirm == "no" {
+			continue
+		}
+
+		removeDate(dateToDelete)
+		saveDates()
+		fmt.Println("\n✅ Date deleted successfully!")
+	}
+}
+
+func removeDate(name string) {
+	ExpensiveDates = filterDates(ExpensiveDates, name)
+	MediumDates = filterDates(MediumDates, name)
+	CheapestDates = filterDates(CheapestDates, name)
+}
+
+func filterDates(dates []DateIdea, name string) []DateIdea {
+	var filtered []DateIdea
+	for _, d := range dates {
+		if d.Name != name {
+			filtered = append(filtered, d)
+		}
+	}
+	return filtered
 }
