@@ -32,6 +32,7 @@ var (
 const dateFile = "dates.json"
 
 func main() {
+	helloMessage()
 	loadDates()
 	for {
 		var mainChoice string
@@ -293,4 +294,8 @@ func filterDates(dates []DateIdea, name string) []DateIdea {
 		}
 	}
 	return filtered
+}
+
+func helloMessage() {
+	fmt.Println("Hello World!")
 }
